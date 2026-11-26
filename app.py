@@ -8,49 +8,74 @@ from datetime import datetime
 st.set_page_config(page_title="FinVision Enterprise", page_icon="💎", layout="wide")
 st.markdown("""<style>div[data-testid="metric-container"]{background-color:#fff;border:1px solid #e0e0e0;padding:15px;border-radius:10px;box-shadow:0 2px 4px rgba(0,0,0,0.05);}</style>""", unsafe_allow_html=True)
 
-USERS_DB = {
-    "admin": {
-        "pass": "1234", "name": "Олександр Коваленко", "role": "Головний бухгалтер",
-        "company": 'ТОВ "Вектор-Інвест"', "edrpou": "42891045",
-        "demo_rev": (1200000, 1450000, 1380000, 1800000),
-        "demo_cost": (850000, 920000, 900000, 1100000),
-        "demo_act": (3000000, 3200000, 3150000, 3600000)
-    },
-    "alex": {
-        "pass": "5678", "name": "Марія Савченко", "role": "Фінансовий директор",
-        "company": 'ТОВ "АгроТех-Груп"', "edrpou": "39512804",
-        "demo_rev": (2500000, 2900000, 3400000, 3100000),
-        "demo_cost": (1800000, 2100000, 2300000, 2200000),
-        "demo_act": (5500000, 5800000, 6200000, 6000000)
+if "users_db" not in st.session_state:
+    st.session_state.users_db = {
+        "admin": {
+            "pass": "1234", "name": "Олександр Коваленко", "role": "Головний бухгалтер",
+            "company": 'ТОВ "Вектор-Інвест"', "edrpou": "42891045",
+            "demo_rev": (1200000, 1450000, 1380000, 1800000),
+            "demo_cost": (850000, 920000, 900000, 1100000),
+            "demo_act": (3000000, 3200000, 3150000, 3600000)
+        },
+        "alex": {
+            "pass": "5678", "name": "Марія Савченко", "role": "Фінансовий директор",
+            "company": 'ТОВ "АгроТех-Груп"', "edrpou": "39512804",
+            "demo_rev": (2500000, 2900000, 3400000, 3100000),
+            "demo_cost": (1800000, 2100000, 2300000, 2200000),
+            "demo_act": (5500000, 5800000, 6200000, 6000000)
+        }
     }
-}
 
 for k, v in {"logged_in": False, "use_demo": False, "curr_user": "admin", "logs": []}.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
 def add_log(action):
-    u = USERS_DB[st.session_state.curr_user]
+    u = st.session_state.users_db[st.session_state.curr_user]
     st.session_state.logs.append({"Час": datetime.now().strftime("%H:%M:%S"), "Користувач": u["name"], "Компанія": u["company"], "Подія": action})
 
 if not st.session_state.logged_in:
     _, col2, _ = st.columns([1, 1.5, 1])
     with col2:
-        st.title("🔐 Вхід у систему FinVision")
-        st.info("Акаунт 1: **admin** / **1234** (Вектор-Інвест)\n\nАкаунт 2: **alex** / **5678** (АгроТех-Груп)")
-        with st.form("login_form"):
-            user = st.text_input("Логін")
-            pwd = st.text_input("Пароль", type="password")
-            if st.form_submit_button("Увійти в кабінет", use_container_width=True):
-                if user in USERS_DB and pwd == USERS_DB[user]["pass"]:
-                    st.session_state.logged_in = True
-                    st.session_state.curr_user = user
-                    add_log("Вхід у систему")
-                    st.rerun()
-                else:
-                    st.error("❌ Невірний логін або пароль!")
+        st.title("💎 Система FinVision")
+        auth_t1, auth_t2 = st.tabs(["🔐 Вхід у кабінет", "📝 Реєстрація компанії"])
+        with auth_t1:
+            st.info("Тестові акаунти: **admin / 1234** або **alex / 5678**")
+            with st.form("login_form"):
+                user = st.text_input("Логін")
+                pwd = st.text_input("Пароль", type="password")
+                if st.form_submit_button("Увійти в систему", use_container_width=True):
+                    if user in st.session_state.users_db and pwd == st.session_state.users_db[user]["pass"]:
+                        st.session_state.logged_in = True
+                        st.session_state.curr_user = user
+                        add_log("Вхід у систему")
+                        st.rerun()
+                    else:
+                        st.error("❌ Невірний логін або пароль!")
+        with auth_t2:
+            with st.form("reg_form"):
+                n_log = st.text_input("Логін (латиницею)*")
+                n_pwd = st.text_input("Пароль*", type="password")
+                n_nam = st.text_input("Ваше ПІБ*", value="Іван Петренко")
+                n_rol = st.selectbox("Посада", ["Головний бухгалтер", "Фінансовий директор", "Аудитор"])
+                n_cmp = st.text_input("Назва компанії*", value='ТОВ "Нові Технології"')
+                n_edr = st.text_input("Код ЄДРПОУ (8 цифр)*", value="44112233", max_chars=8)
+                if st.form_submit_button("✅ Зареєструватися", use_container_width=True):
+                    if not n_log or not n_pwd or not n_cmp:
+                        st.warning("⚠️ Заповніть обов'язкові поля!")
+                    elif n_log in st.session_state.users_db:
+                        st.error("❌ Цей логін вже зайнятий!")
+                    else:
+                        st.session_state.users_db[n_log] = {
+                            "pass": n_pwd, "name": n_nam, "role": n_rol,
+                            "company": n_cmp, "edrpou": n_edr,
+                            "demo_rev": (950000, 1150000, 1300000, 1600000),
+                            "demo_cost": (700000, 800000, 850000, 980000),
+                            "demo_act": (2200000, 2400000, 2600000, 2900000)
+                        }
+                        st.success(f"🎉 Компанію {n_cmp} зареєстровано! Перейдіть на вкладку «🔐 Вхід у кабінет».")
 else:
-    u_data = USERS_DB[st.session_state.curr_user]
+    u_data = st.session_state.users_db[st.session_state.curr_user]
     st.title(f"💎 FinVision: {u_data['company']}")
     st.caption(f"Код ЄДРПОУ: {u_data['edrpou']} | Сесія: {datetime.now().strftime('%d.%m.%Y')} | Стандарт МСФЗ / П(С)БО")
     st.markdown("---")
@@ -64,9 +89,9 @@ else:
                 nc = st.text_input("Компанія:", value=u_data["company"])
                 ne = st.text_input("ЄДРПОУ:", value=u_data["edrpou"], max_chars=8)
                 if st.form_submit_button("💾 Зберегти", use_container_width=True):
-                    USERS_DB[st.session_state.curr_user]["name"] = nn
-                    USERS_DB[st.session_state.curr_user]["company"] = nc
-                    USERS_DB[st.session_state.curr_user]["edrpou"] = ne
+                    st.session_state.users_db[st.session_state.curr_user]["name"] = nn
+                    st.session_state.users_db[st.session_state.curr_user]["company"] = nc
+                    st.session_state.users_db[st.session_state.curr_user]["edrpou"] = ne
                     add_log(f"Оновлено реквізити ({nc})")
                     st.rerun()
 
